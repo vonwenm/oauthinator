@@ -1,0 +1,12 @@
+#
+# To start run:
+#   gcloud --verbosity debug preview app run app.yaml
+#
+application: oauthinator-staging
+version: alpha-001
+runtime: go
+api_version: go1
+
+handlers:
+- url: /.*
+  script: _go_app
