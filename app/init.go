@@ -1,6 +1,6 @@
 // +build appengine
 
-package main
+package oauthinator
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
 )
 
 type appHandler func(*http.Request) (interface{}, error)
@@ -19,7 +20,6 @@ func init() {
 	// load all the handers for the appengine project
 	r := mux.NewRouter()
 	r.HandleFunc("/users", anonHander(usvc.NewHandler)).Methods("POST")
-
 	http.Handle("/", r)
 }
 
@@ -33,14 +33,14 @@ func anonHander(h appHandler) http.HandlerFunc {
 		appResp := &appResponse{Response: resp}
 
 		if err != nil {
-			c.Errorf("%v", err)
+			log.Errorf(c, "%v", err)
 			appResp.Error = err.Error()
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		if err = json.NewEncoder(w).Encode(appResp); err != nil {
-			c.Criticalf("Error encoding response: %v", err)
+			log.Criticalf(c, "Error encoding response: %v", err)
 		}
 	}
 }

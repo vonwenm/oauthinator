@@ -1,4 +1,4 @@
-package main
+package oauthinator
 
 type appResponse struct {
 	Response interface{}
