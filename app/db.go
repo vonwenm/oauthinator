@@ -1,32 +1,79 @@
-package oauthinator
+// +build !appengine
+
+package main
 
 import (
-	"errors"
-	"time"
+	"bytes"
+	"encoding/gob"
+	"fmt"
+
+	"github.com/boltdb/bolt"
+	"golang.org/x/net/context"
 )
 
-// User which represents a user of the system
-type User struct {
-	Login   string
-	Name    string
-	Email   string
-	Bio     string `datastore:",noindex"`
-	URL     string
-	Tz      string
-	Org     string
-	Created time.Time
+var (
+	defaultStore = newStore()
+)
+
+type store struct {
+	db *bolt.DB
 }
 
-// Valid some simple validation of the user used to check creation and update
-func (u *User) Valid() error {
+func (s *store) save(entity string, key string, val interface{}) error {
+
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(val)
+	if err != nil {
+		return err
+	}
+
+	return s.db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket([]byte(entity)).Put([]byte(key), buf.Bytes())
+	})
+}
+
+func newStore() *store {
+	db, err := bolt.Open("./oauthinator.db", 0666, nil)
+
+	if err != nil {
+		panic(fmt.Sprintf("unable to create data store: %v", err))
+	}
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucket([]byte("Users"))
+		if err != nil {
+			return fmt.Errorf("create bucket: %s", err)
+		}
+		logf(nil, "created bucket %v", b.Stats())
+
+		return nil
+	})
+
+	if err != nil {
+		panic(fmt.Sprintf("unable to create data store: %v", err))
+	}
+
+	return &store{db}
+}
+
+// Key generate a user key
+func (u *User) Key(_ context.Context) string {
+
 	if u.Login == "" {
-		return errors.New("invalid user, login required")
+		panic("Tried Key on User with empty Login")
 	}
-	if u.Name == "" {
-		return errors.New("invalid user, name required")
+
+	return fmt.Sprintf("User-%v", u.Login)
+}
+
+func putUser(_ context.Context, u *User) error {
+	if u == nil {
+		return fmt.Errorf("User is nil")
 	}
-	if u.Email == "" {
-		return errors.New("invalid user, email required")
+
+	if err := u.Valid(); err != nil {
+		return fmt.Errorf("putting User: %v", err)
 	}
-	return nil
+
+	return defaultStore.save("Users", u.Key(nil), u)
 }

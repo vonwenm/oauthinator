@@ -1,19 +1,17 @@
 // +build appengine
 
-package oauthinator
+package main
 
 import (
 	"fmt"
 
-	"appengine"
-	"appengine/datastore"
+	"golang.org/x/net/context"
+
+	"google.golang.org/appengine/datastore"
 )
 
-type GaeUserStore struct {
-}
-
-// Key generate a key for the current user
-func (u *User) Key(c appengine.Context) *datastore.Key {
+// Key generate a user key
+func (u *User) Key(c context.Context) *datastore.Key {
 
 	if u.Login == "" {
 		panic("Tried Key on User with empty Login")
@@ -22,7 +20,7 @@ func (u *User) Key(c appengine.Context) *datastore.Key {
 	return datastore.NewKey(c, "User", u.Login, 0, nil)
 }
 
-func (*GaeUserStore) PutUser(c appengine.Context, u *User) error {
+func putUser(c context.Context, u *User) error {
 
 	if err := u.Valid(); err != nil {
 		return fmt.Errorf("putting Commit: %v", err)

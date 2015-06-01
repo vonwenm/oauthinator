@@ -17,6 +17,10 @@ cd app
 gcloud --verbosity debug preview app run app.yaml
 ```
 
+```
+curl -H "Content-Type: application/json" -X POST -d '{"login": "wolfeidau", "email": "mark@wolfe.id.au", "name": "Mark Wolfe"}' http://localhost:8080/users
+```
+
 # disclaimer
 
 I am currently road testing the new app engine apis so this is very much an experiment at the moment.
